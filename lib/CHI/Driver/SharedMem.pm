@@ -8,7 +8,7 @@ package CHI::Driver::SharedMem;
 #   (in CHI::Driver::SharedMem::t::CHIDriverTests->test_l1_cache)
 #     cache isn't a 'CHI::Driver::CHIDriverTests' it's a 'Moose::Meta::Class::__ANON__::SERIAL::3'
 # etc.
-# I don't know why
+# I don't know why - if you know, please e-mail njh@bandsman.co.uk
 
 use warnings;
 use strict;
@@ -24,6 +24,18 @@ extends 'CHI::Driver';
 has 'size' => (is => 'ro', isa => 'Int', default => 8 * 1024);
 has 'shmkey' => (is => 'ro', isa => 'Int', default => 0);
 has 'shm' => (is => 'ro', builder => '_get_shm', lazy => 1);
+has '_data_size' => (
+	is => 'rw',
+	isa => 'Int',
+	reader => 'get_data_size',
+	writer => 'set_data_size'
+);
+has '_data' => (
+	is => 'rw',
+	isa => 'ArrayRef[ArrayRef]',
+	reader => 'get_data',
+	writer => 'set_data'
+);
 
 __PACKAGE__->meta->make_immutable();
 
@@ -33,11 +45,14 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
+
+# FIXME - get the pod documentation right so that the layout of the memory
+# area looks correct in the man page
 
 =head1 SYNOPSIS
 
@@ -57,6 +72,7 @@ area. See L<IPC::SharedMem> for more information.
     # ...
 
 The shared memory area is stored thus:
+
 	Number of bytes in the cache [ 4 bytes ]
 	'cache' => {
 		'namespace1' => {
@@ -83,20 +99,9 @@ Stores an object in the cache
 sub store {
 	my($self, $key, $data) = @_;
 
-	# warn "store $key";
-	my $h;
-	my $cur_size = unpack('L', $self->shm()->read(0, 4));
-	# warn "store - old cur_size $cur_size";
-	if($cur_size) {
-		$h = thaw($self->shm()->read(4, $cur_size));
-	}
+	my $h = $self->_data();
 	$h->{$self->namespace()}->{$key} = $data;
-	my $f = freeze($h);
-	$cur_size = length($f);
-	$self->shm()->write(pack('L', $cur_size), 0, 4);
-	$self->shm()->write($f, 4, $cur_size);
-	# warn "store - new cur_size $cur_size";
-	# warn Dumper($h);
+	$self->_data($h);
 }
 
 =head2 fetch
@@ -108,14 +113,7 @@ Retrieves an object from the cache
 sub fetch {
 	my($self, $key) = @_;
 
-	my $cur_size = unpack('L', $self->shm()->read(0, 4));
-	# warn "fetch - cur_size " . $cur_size;
-	unless($cur_size) {
-		return;
-	}
-	my $f = $self->shm()->read(4, $cur_size);
-	my $h = thaw($f);
-	# warn Dumper($h);
+	my $h = $self->_data();
 	return $h->{$self->namespace()}->{$key};
 }
 
@@ -128,22 +126,9 @@ Remove an object from the cache
 sub remove {
 	my($self, $key) = @_;
 
-	# warn "remove $key";
-	# warn "remove - cur_size " . $self->cur_size();
-	my $cur_size = unpack('L', $self->shm()->read(0, 4));
-	unless($cur_size) {
-		return;
-	}
-	my $h = thaw($self->shm()->read(4, $cur_size));
-
+	my $h = $self->_data();
 	delete $h->{$self->namespace()}->{$key};
-
-	my $f = freeze($h);
-	$cur_size = length($f);
-	$self->shm()->write(pack('L', $cur_size), 0, 4);
-	$self->shm()->write($f, 4, $cur_size);
-	# warn Dumper($h);
-	# warn "remove - cur_size " . $self->cur_size();
+	$self->_data($h);
 }
 
 =head2 clear
@@ -155,19 +140,9 @@ Removes all data from the cache
 sub clear {
 	my $self = shift;
 
-	# warn "clear";
-	my $cur_size = unpack('L', $self->shm()->read(0, 4));
-	unless($cur_size) {
-		return;
-	}
-	my $h = thaw($self->shm()->read(4, $cur_size));
-
+	my $h = $self->_data();
 	delete $h->{$self->namespace()};
-
-	my $f = freeze($h);
-	$cur_size = length($f);
-	$self->shm()->write(pack('L', $cur_size), 0, 4);
-	$self->shm()->write($f, 4, $cur_size);
+	$self->_data($h);
 }
 
 =head2 get_keys
@@ -179,17 +154,7 @@ Gets a list of the keys in the cache
 sub get_keys {
 	my $self = shift;
 
-	# warn "get_keys";
-	if(!defined($self->shm())) {
-		return keys({});
-	}
-	my $cur_size = unpack('L', $self->shm()->read(0, 4));
-	unless($cur_size) {
-		# warn "get_keys where's me keys?";
-		return keys({});
-	}
-	my $h = thaw($self->shm()->read(4, $cur_size));
-
+	my $h = $self->_data();
 	return(keys(%{$h->{$self->namespace()}}));
 }
 
@@ -202,17 +167,7 @@ Gets a list of the namespaces in the cache
 sub get_namespaces {
 	my $self = shift;
 
-	# warn "get_namespaces";
-	if(!defined($self->shm())) {
-		return keys({});
-	}
-	my $cur_size = unpack('L', $self->shm()->read(0, 4));
-	unless($cur_size) {
-		# warn "get_keys where's me keys?";
-		return keys({});
-	}
-	my $h = thaw($self->shm()->read(4, $cur_size));
-
+	my $h = $self->_data();
 	return(keys(%{$h}));
 }
 
@@ -232,6 +187,51 @@ sub _get_shm {
 		$shm->write(pack('L', 0), 0, 4);
 	}
 	return $shm;
+}
+
+sub _data_size {
+	my $self = shift;
+	my $value = shift;
+
+	if($value) {
+		$self->shm()->write(pack('L', $value), 0, 4);
+		return $value;
+	}
+	return unpack('L', $self->shm()->read(0, 4));
+}
+
+sub _data {
+	my $self = shift;
+	my $h = shift;
+
+	if($h) {
+		my $f = freeze($h);
+		my $cur_size = length($f);
+		$self->shm()->write($f, 4, $cur_size);
+		$self->_data_size($cur_size);
+	} else {
+		my $cur_size = $self->_data_size();
+		unless($cur_size) {
+			return {};
+		}
+		my $f = $self->shm()->read(4, $cur_size);
+		my $h = thaw($f);
+		return $h;
+	}
+}
+
+=head2 DEMOLISH
+
+If there is no data in the shared memory area, remove it.
+
+=cut
+
+sub DEMOLISH {
+	my $self = shift;
+
+	unless($self->_data_size()) {
+		$self->shm()->remove();
+	}
 }
 
 =head1 AUTHOR

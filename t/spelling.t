@@ -19,18 +19,8 @@ if($@) {
 
 __END__
 AnnoCPAN
-CGI
 CPAN
 GPL
-Init
-ISPs
-POSTing
 RT
-cgi
-http
-https
-params
-stdin
-tmpdir
-www
-xml
+IPC
+Shmkey

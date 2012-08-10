@@ -1,6 +1,12 @@
 Revision history for CHI::Driver::SharedMem
 
+0.03	Fri Aug 10 18:07:19 BST 2012
+	When the last object goes, if the cache is empty reclaim the shared
+		memory
+	More moosified, so it's much smaller and cleaner
+	
 0.02	Fri Aug 10 16:42:15 BST 2012
 	Fixed some tests
+
 0.01
         First draft

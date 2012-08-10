@@ -33,20 +33,44 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
-L<CHI> driver which stores data in shared memory objects for persistency
-over processes.
+L<CHI> driver which stores data in shared memory objects for persistently over
+processes.
+Size is an optional parameter containing the size of the shared memory area,
+in bytes.
+Shmkey is a mandatory parameter containing the IPC key for the shared memory
+area. See L<IPC::SharedMem> for more information.
 
     use CHI;
-    my $cache = CHI->new(driver => 'SharedMem', size => 8 * 1024);
+    my $cache = CHI->new(
+    	driver => 'SharedMem',
+	size => 8 * 1024,
+	shmkey => 12344321,	# Choose something unique
+    );
     # ...
+
+The shared memory area is stored thus:
+	Number of bytes in the cache [ 4 bytes ]
+	'cache' => {
+		'namespace1' => {
+			'key1' => 'value1',
+			'key2' -> 'value2',
+			...
+		}
+		'namespace2' => {
+			'key1' => 'value3',
+			'key3' => 'value2',
+			...
+		}
+		...
+	}
 
 =head1 SUBROUTINES/METHODS
 

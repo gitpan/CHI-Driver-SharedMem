@@ -13,6 +13,6 @@ eval "use Test::GreaterVersion";
 
 plan skip_all => "Test::GreaterVersion required for checking versions" if $@;
 
-Test::GreaterVersion::has_greater_version_than_cpan('CGI::Info');
+Test::GreaterVersion::has_greater_version_than_cpan('CHI::Driver::SharedMemory');
 
 done_testing();

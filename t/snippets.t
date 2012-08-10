@@ -16,7 +16,7 @@ if($@) {
 } else {
 	my $tps = Test::Pod::Snippets->new;
 
-	my @modules = qw/ CGI::Info /;
+	my @modules = qw/ CHI::Driver::SharedMem /;
 
 	$tps->runtest( module => $_, testgroup => 1 ) for @modules;
 }

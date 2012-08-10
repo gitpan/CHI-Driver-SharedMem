@@ -1,4 +1,6 @@
 Revision history for CHI::Driver::SharedMem
 
+0.02	Fri Aug 10 16:42:15 BST 2012
+	Fixed some tests
 0.01
         First draft

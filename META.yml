@@ -1,0 +1,28 @@
+---
+abstract: 'Cache data in shared memory'
+author:
+  - 'Nigel Horne <njh@bandsman.co.uk>'
+build_requires:
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.120921'
+license: open_source
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: CHI-Driver-SharedMem
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  IPC::SharedMem: 0
+  IPC::SysV: 0
+  Moose: 0
+  Storable: 0
+  Test::Class: 0
+  Test::More: 0.82
+  Test::NoWarnings: 0
+version: 0.01

@@ -18,23 +18,24 @@ use IPC::SharedMem;
 use Storable qw(freeze thaw);
 use Data::Dumper;
 use Digest::MD5;
+use Carp;
 
 extends 'CHI::Driver';
 
 has 'size' => (is => 'ro', isa => 'Int', default => 8 * 1024);
-has 'shmkey' => (is => 'ro', isa => 'Int', default => 0);
+has 'shmkey' => (is => 'ro', isa => 'Int');
 has 'shm' => (is => 'ro', builder => '_get_shm', lazy => 1);
 has '_data_size' => (
 	is => 'rw',
 	isa => 'Int',
-	reader => 'get_data_size',
-	writer => 'set_data_size'
+	reader => '_get_data_size',
+	writer => '_set_data_size'
 );
 has '_data' => (
 	is => 'rw',
 	isa => 'ArrayRef[ArrayRef]',
-	reader => 'get_data',
-	writer => 'set_data'
+	reader => '_get_data',
+	writer => '_set_data'
 );
 
 __PACKAGE__->meta->make_immutable();
@@ -45,11 +46,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -174,13 +175,10 @@ sub get_namespaces {
 sub _get_shm {
 	my $self = shift;
 
-	# warn "_get_shm";
-
 	unless($self->shmkey()) {
-		warn 'CHI::Driver::SharedMem - no key given';
+		carp 'CHI::Driver::SharedMem - no key given';
 		return;
 	}
-
 	my $shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRWXU);
 	unless($shm) {
 		$shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRWXU|IPC_CREAT);
@@ -220,6 +218,20 @@ sub _data {
 	}
 }
 
+=head2 BUILD
+
+Constructor - validate arguments
+
+=cut
+
+sub BUILD {
+	my $self = shift;
+
+	unless($self->shmkey()) {
+		carp 'CHI::Driver::SharedMem - no key given';
+	}
+}
+
 =head2 DEMOLISH
 
 If there is no data in the shared memory area, remove it.
@@ -247,7 +259,7 @@ automatically be notified of progress on your bug as I make changes.
 
 =head1 SEE ALSO
 
-CHI, IPC::SharedMem;
+CHI, IPC::SharedMem
 
 
 =head1 SUPPORT

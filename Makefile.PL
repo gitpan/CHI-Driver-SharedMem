@@ -21,11 +21,13 @@ WriteMakefile(
     PREREQ_PM => {
         'Test::More' => 0.82,	# Needs new_ok
 	'Test::NoWarnings' => 0,
+	'Test::Warn' => 0,
 	'Test::Class' => 0,
 	'Storable' => 0,
 	'Moose' => 0,
 	'IPC::SysV' => 0,
 	'IPC::SharedMem' => 0,
+	'CHI' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CHI-Driver-SharedMem-*' },

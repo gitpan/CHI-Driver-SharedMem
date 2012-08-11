@@ -7,4 +7,4 @@ BEGIN {
 ";
 }
 
-diag( "Testing CHI::Driver::SharedMem $CGI::Driver::SharedMem::VERSION, Perl $], $^X" );
+diag( "Testing CHI::Driver::SharedMem $CHI::Driver::SharedMem::VERSION, Perl $], $^X" );

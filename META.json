@@ -32,16 +32,18 @@
       },
       "runtime" : {
          "requires" : {
+            "CHI" : "0",
             "IPC::SharedMem" : "0",
             "IPC::SysV" : "0",
             "Moose" : "0",
             "Storable" : "0",
             "Test::Class" : "0",
             "Test::More" : "0.82",
-            "Test::NoWarnings" : "0"
+            "Test::NoWarnings" : "0",
+            "Test::Warn" : "0"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.03"
+   "version" : "0.04"
 }

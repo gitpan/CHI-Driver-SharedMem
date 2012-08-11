@@ -6,6 +6,7 @@ ignore.txt
 lib/CHI/Driver/SharedMem.pm
 lib/CHI/Driver/SharedMem/t/CHIDriverTests.pm
 t/00-load.t
+t/01-new.t
 t/boiler.t
 t/CHI-driver-tests.t
 t/coverage.t

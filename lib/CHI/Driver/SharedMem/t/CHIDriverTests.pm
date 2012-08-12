@@ -1,5 +1,5 @@
-# package CHI::t::Driver::SharedMem;
 package CHI::Driver::SharedMem::t::CHIDriverTests;
+# package CHI::t::Driver::SharedMem;
 
 use strict;
 use warnings;
@@ -13,11 +13,11 @@ CHI::Driver::SharedMem::t::CHIDriverTests
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -27,10 +27,19 @@ CHI::Driver::SharedMem::t::CHIDriverTests - test CHI::Driver::SharedMem
 
 =head1 SUBROUTINES/METHODS
 
-=head2 new_cache_options
+=head2 testing_driver_class
+
+Declare the driver being tested
 
 =cut
 
+sub testing_driver_class {
+	'CHI::Driver::SharedMem'
+}
+
+=head2 new_cache_options
+
+=cut
 sub new_cache_options {
 	my $self = shift;
 
@@ -56,35 +65,6 @@ sub test_shmkey_required : Tests {
 		qr /CHI::Driver::SharedMem - no key given/
 	);
 	# ok(!$cache);
-}
-
-=head2 test_mirror_cache
-
-TODO - This test fails so I'm overriding it to pass.
-I know that's bad form - don't tell me otherwise -
-but let know if you know how to fix:
-
-Fails tests:
-  Failed test 'cache isa CHI::Driver::CHIDriverTests'
-  at /usr/local/share/perl/5.14.2/CHI/t/Driver.pm line 857.
-  (in CHI::Driver::SharedMem::t::CHIDriverTests->test_l1_cache)
-    cache isn't a 'CHI::Driver::CHIDriverTests' it's a 'Moose::Meta::Class::__ANON__::SERIAL::3'
-etc.
-
-=cut
-
-sub test_mirror_cache : Tests {
-    return "TODO - unexpectedly fails, I don't know why";
-}
-
-=head2 test_l1_cache
-
-As test_mirror_cache
-
-=cut
-
-sub test_l1_cache : Tests {
-    return "TODO - unexpectedly fails, I don't know why";
 }
 
 1;

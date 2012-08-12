@@ -1,5 +1,12 @@
 Revision history for CHI::Driver::SharedMem
 
+0.05	Sun Aug 12 14:09:19 BST 2012
+	Add consistency check which handles the failure at
+		http://www.cpantesters.org/cpan/report/a7449b64-e424-11e1-9066-3d54fb7543f5
+	Fixed the failing tests (test_mirror_cache and test_li_cache)
+
+=head2 test_mirror_cache
+
 0.04	Sat Aug 11 14:27:19 BST 2012
 	Furged some tests to pass when they should fail, it's a temporary
 		work around which will nee to be addressed
@@ -8,7 +15,7 @@ Revision history for CHI::Driver::SharedMem
 	When the last object goes, if the cache is empty reclaim the shared
 		memory
 	More moosified, so it's much smaller and cleaner
-	
+
 0.02	Fri Aug 10 16:42:15 BST 2012
 	Fixed some tests
 

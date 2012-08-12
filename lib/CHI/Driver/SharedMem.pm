@@ -46,11 +46,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -195,6 +195,9 @@ sub _data_size {
 		$self->shm()->write(pack('L', $value), 0, 4);
 		return $value;
 	}
+	unless($self->shm()) {
+		return 0;
+	}
 	return unpack('L', $self->shm()->read(0, 4));
 }
 
@@ -207,14 +210,13 @@ sub _data {
 		my $cur_size = length($f);
 		$self->shm()->write($f, 4, $cur_size);
 		$self->_data_size($cur_size);
+		return $h;
 	} else {
 		my $cur_size = $self->_data_size();
 		unless($cur_size) {
 			return {};
 		}
-		my $f = $self->shm()->read(4, $cur_size);
-		my $h = thaw($f);
-		return $h;
+		return thaw($self->shm()->read(4, $cur_size));
 	}
 }
 

@@ -3,8 +3,7 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 if($^O eq 'MSWin32') {
-	# This will set fail. I really want the result to be NA, but I can't
-	# find how to do that.
+	# This will set the CPAN-Testers status to NA
 	die 'Windows is not supported';
 }
 

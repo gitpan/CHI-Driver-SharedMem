@@ -1,14 +1,6 @@
 package CHI::Driver::SharedMem;
 
-# FIXME: no locking is done yet
-
-# Fails tests:
-#   Failed test 'cache isa CHI::Driver::CHIDriverTests'
-#   at /usr/local/share/perl/5.14.2/CHI/t/Driver.pm line 857.
-#   (in CHI::Driver::SharedMem::t::CHIDriverTests->test_l1_cache)
-#     cache isn't a 'CHI::Driver::CHIDriverTests' it's a 'Moose::Meta::Class::__ANON__::SERIAL::3'
-# etc.
-# I don't know why - if you know, please e-mail njh@bandsman.co.uk
+# TODO: Locking
 
 use warnings;
 use strict;
@@ -46,11 +38,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -244,7 +236,9 @@ sub DEMOLISH {
 	my $self = shift;
 
 	unless($self->_data_size()) {
-		$self->shm()->remove();
+		if($self->shm()) {
+			$self->shm()->remove();
+		}
 	}
 }
 

@@ -1,5 +1,8 @@
 Revision history for CHI::Driver::SharedMem
 
+0.06	Sun Aug 12 20:17:56 BST 2012
+	Don't try to remove the shared memory area if we haven't attached to it
+
 0.05	Sun Aug 12 14:09:19 BST 2012
 	Add consistency check which handles the failure at
 		http://www.cpantesters.org/cpan/report/a7449b64-e424-11e1-9066-3d54fb7543f5

@@ -1,5 +1,12 @@
 Revision history for CHI::Driver::SharedMem
 
+0.07	Mon Aug 13 09:04:17 BST 2012
+	Attach to the shared memory area
+	Only remove the shared memory area in the destructor when there are
+		no attachments, as well as nothing in the cache
+	Croak rather than carp when shmkey isn't given
+	Tidied the tests
+
 0.06	Sun Aug 12 20:17:56 BST 2012
 	Don't try to remove the shared memory area if we haven't attached to it
 

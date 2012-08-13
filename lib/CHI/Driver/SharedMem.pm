@@ -1,6 +1,9 @@
 package CHI::Driver::SharedMem;
 
 # TODO: Locking
+# There is an argument for mapping namespaces into keys and then putting
+# different namespaces into different shared memory areas.  I will think about
+# that.
 
 use warnings;
 use strict;
@@ -14,9 +17,9 @@ use Carp;
 
 extends 'CHI::Driver';
 
-has 'size' => (is => 'ro', isa => 'Int', default => 8 * 1024);
 has 'shmkey' => (is => 'ro', isa => 'Int');
 has 'shm' => (is => 'ro', builder => '_get_shm', lazy => 1);
+has 'size' => (is => 'ro', isa => 'Int', default => 8 * 1024);
 has '_data_size' => (
 	is => 'rw',
 	isa => 'Int',
@@ -38,11 +41,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -51,8 +54,8 @@ our $VERSION = '0.06';
 
 L<CHI> driver which stores data in shared memory objects for persistently over
 processes.
-Size is an optional parameter containing the size of the shared memory area,
-in bytes.
+Size is an optional parameter containing the size of the shared memory area, in
+bytes.
 Shmkey is a mandatory parameter containing the IPC key for the shared memory
 area. See L<IPC::SharedMem> for more information.
 
@@ -66,20 +69,24 @@ area. See L<IPC::SharedMem> for more information.
 
 The shared memory area is stored thus:
 
-	Number of bytes in the cache [ 4 bytes ]
-	'cache' => {
-		'namespace1' => {
-			'key1' => 'value1',
-			'key2' -> 'value2',
-			...
-		}
-		'namespace2' => {
-			'key1' => 'value3',
-			'key3' => 'value2',
-			...
-		}
+=over 4
+
+Number of bytes in the cache [ 4 bytes ]
+'cache' => {
+	'namespace1' => {
+		'key1' => 'value1',
+		'key2' -> 'value2',
 		...
 	}
+	'namespace2' => {
+		'key1' => 'value3',
+		'key3' => 'value2',
+		...
+	}
+	...
+}
+
+=back
 
 =head1 SUBROUTINES/METHODS
 
@@ -126,7 +133,7 @@ sub remove {
 
 =head2 clear
 
-Removes all data from the cache
+Removes all data from the current namespace
 
 =cut
 
@@ -140,7 +147,7 @@ sub clear {
 
 =head2 get_keys
 
-Gets a list of the keys in the cache
+Gets a list of the keys in the current namespace
 
 =cut
 
@@ -167,15 +174,12 @@ sub get_namespaces {
 sub _get_shm {
 	my $self = shift;
 
-	unless($self->shmkey()) {
-		carp 'CHI::Driver::SharedMem - no key given';
-		return;
-	}
 	my $shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRWXU);
 	unless($shm) {
 		$shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRWXU|IPC_CREAT);
 		$shm->write(pack('L', 0), 0, 4);
 	}
+	$shm->attach();
 	return $shm;
 }
 
@@ -222,22 +226,31 @@ sub BUILD {
 	my $self = shift;
 
 	unless($self->shmkey()) {
-		carp 'CHI::Driver::SharedMem - no key given';
+		croak 'CHI::Driver::SharedMem - no key given';
 	}
 }
 
 =head2 DEMOLISH
 
-If there is no data in the shared memory area, remove it.
+If there is no data in the shared memory area, and no-one else is using it,
+it's safe to remove it and reclaim the memory.
 
 =cut
+
+# TODO: formal tests that this works
 
 sub DEMOLISH {
 	my $self = shift;
 
-	unless($self->_data_size()) {
-		if($self->shm()) {
-			$self->shm()->remove();
+	if($self->shmkey()) {
+		$self->shm()->detach();
+		# We could scan the cache and see if all has expired.
+		# If it has, then the cache could be removed if nattch = 0.
+		unless($self->_data_size()) {
+			my $stat = $self->shm()->stat();
+			if($stat->nattch() == 0) {
+				$self->shm()->remove();
+			}
 		}
 	}
 }

@@ -6,6 +6,7 @@ use warnings;
 use CHI::Test;
 use base qw(CHI::t::Driver);
 use Test::Warn;
+use IPC::SysV qw(S_IRWXU);
 
 =head1 NAME
 
@@ -13,11 +14,11 @@ CHI::Driver::SharedMem::t::CHIDriverTests
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 SYNOPSIS
 
@@ -53,18 +54,22 @@ sub new_cache_options {
 
 =head2 test_shmkey_required
 
-The shmkey option is mandatory
+Verify that the shmkey option is mandatory
 
 =cut
 
 sub test_shmkey_required : Tests {
 	my $cache;
 
-	diag('Ignore no key given message');
-	warning_like(sub { $cache = CHI->new(driver => 'SharedMem') },
-		qr /CHI::Driver::SharedMem - no key given/
-	);
-	# ok(!$cache);
+	eval {
+		$cache = CHI->new(driver => 'SharedMem');
+	};
+	if($@) {
+		ok($@ =~ /CHI::Driver::SharedMem - no key given/);
+		ok(!defined($cache));
+	} else {
+		ok(0, 'Allowed shmkey to be undefined');
+	}
 }
 
 1;

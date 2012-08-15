@@ -1,5 +1,11 @@
 Revision history for CHI::Driver::SharedMem
 
+0.08	Wed Aug 15 08:31:38 BST 2012
+	Added test that the shared memory area is deleted on cleanup
+	Ensure using the latest version of CHI::Stats
+	Don't set the execute bit in the shared memory area
+	Store the size as an int rather than 32 bits
+
 0.07	Mon Aug 13 09:04:17 BST 2012
 	Attach to the shared memory area
 	Only remove the shared memory area in the destructor when there are

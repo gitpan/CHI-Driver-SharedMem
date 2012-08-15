@@ -8,7 +8,7 @@ package CHI::Driver::SharedMem;
 use warnings;
 use strict;
 use Moose;
-use IPC::SysV qw(S_IRWXU IPC_CREAT);
+use IPC::SysV qw(S_IRUSR S_IWUSR IPC_CREAT);
 use IPC::SharedMem;
 use Storable qw(freeze thaw);
 use Data::Dumper;
@@ -41,11 +41,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -61,7 +61,7 @@ area. See L<IPC::SharedMem> for more information.
 
     use CHI;
     my $cache = CHI->new(
-    	driver => 'SharedMem',
+	driver => 'SharedMem',
 	size => 8 * 1024,
 	shmkey => 12344321,	# Choose something unique
     );
@@ -71,7 +71,7 @@ The shared memory area is stored thus:
 
 =over 4
 
-Number of bytes in the cache [ 4 bytes ]
+Number of bytes in the cache [ int ]
 'cache' => {
 	'namespace1' => {
 		'key1' => 'value1',
@@ -113,8 +113,7 @@ Retrieves an object from the cache
 sub fetch {
 	my($self, $key) = @_;
 
-	my $h = $self->_data();
-	return $h->{$self->namespace()}->{$key};
+	return $self->_data()->{$self->namespace()}->{$key};
 }
 
 =head2 remove
@@ -167,17 +166,16 @@ Gets a list of the namespaces in the cache
 sub get_namespaces {
 	my $self = shift;
 
-	my $h = $self->_data();
-	return(keys(%{$h}));
+	return(keys(%{$self->_data()}));
 }
 
 sub _get_shm {
 	my $self = shift;
 
-	my $shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRWXU);
+	my $shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRUSR|S_IWUSR);
 	unless($shm) {
-		$shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRWXU|IPC_CREAT);
-		$shm->write(pack('L', 0), 0, 4);
+		$shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRUSR|S_IWUSR|IPC_CREAT);
+		$shm->write(pack('I', 0), 0, 4);
 	}
 	$shm->attach();
 	return $shm;
@@ -188,13 +186,13 @@ sub _data_size {
 	my $value = shift;
 
 	if($value) {
-		$self->shm()->write(pack('L', $value), 0, 4);
+		$self->shm()->write(pack('I', $value), 0, 4);
 		return $value;
 	}
 	unless($self->shm()) {
 		return 0;
 	}
-	return unpack('L', $self->shm()->read(0, 4));
+	return unpack('I', $self->shm()->read(0, 4));
 }
 
 sub _data {
@@ -237,16 +235,21 @@ it's safe to remove it and reclaim the memory.
 
 =cut
 
-# TODO: formal tests that this works
-
 sub DEMOLISH {
 	my $self = shift;
 
 	if($self->shmkey()) {
+		my $cur_size;
+		if($self->get_namespaces()) {
+			$cur_size = $self->_data_size();
+		} else {
+			$self->_data_size(0);
+			$cur_size = 0;
+		}
 		$self->shm()->detach();
 		# We could scan the cache and see if all has expired.
 		# If it has, then the cache could be removed if nattch = 0.
-		unless($self->_data_size()) {
+		unless($cur_size) {
 			my $stat = $self->shm()->stat();
 			if($stat->nattch() == 0) {
 				$self->shm()->remove();

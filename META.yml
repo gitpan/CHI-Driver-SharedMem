@@ -18,7 +18,7 @@ no_index:
     - t
     - inc
 requires:
-  CHI: 0
+  CHI: 0.54
   IPC::SharedMem: 0
   IPC::SysV: 0
   Moose: 0
@@ -27,4 +27,4 @@ requires:
   Test::More: 0.82
   Test::NoWarnings: 0
   Test::Warn: 0
-version: 0.07
+version: 0.08

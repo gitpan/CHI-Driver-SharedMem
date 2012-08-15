@@ -1,12 +1,10 @@
 package CHI::Driver::SharedMem::t::CHIDriverTests;
-# package CHI::t::Driver::SharedMem;
 
 use strict;
 use warnings;
 use CHI::Test;
 use base qw(CHI::t::Driver);
 use Test::Warn;
-use IPC::SysV qw(S_IRWXU);
 
 =head1 NAME
 
@@ -14,11 +12,11 @@ CHI::Driver::SharedMem::t::CHIDriverTests
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 SYNOPSIS
 

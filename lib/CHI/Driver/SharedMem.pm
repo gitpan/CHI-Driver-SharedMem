@@ -14,6 +14,7 @@ use Storable qw(freeze thaw);
 use Data::Dumper;
 use Digest::MD5;
 use Carp;
+use Config;
 
 extends 'CHI::Driver';
 
@@ -41,11 +42,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -175,7 +176,12 @@ sub _get_shm {
 	my $shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRUSR|S_IWUSR);
 	unless($shm) {
 		$shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRUSR|S_IWUSR|IPC_CREAT);
-		$shm->write(pack('I', 0), 0, 4);
+		unless($shm) {
+			croak 'Couldn\'t create a shared memory area with key ' .
+				$self->shmkey();
+			return;
+		}
+		$shm->write(pack('I', 0), 0, $Config{intsize});
 	}
 	$shm->attach();
 	return $shm;
@@ -186,13 +192,13 @@ sub _data_size {
 	my $value = shift;
 
 	if($value) {
-		$self->shm()->write(pack('I', $value), 0, 4);
+		$self->shm()->write(pack('I', $value), 0, $Config{intsize});
 		return $value;
 	}
 	unless($self->shm()) {
 		return 0;
 	}
-	return unpack('I', $self->shm()->read(0, 4));
+	return unpack('I', $self->shm()->read(0, $Config{intsize}));
 }
 
 sub _data {
@@ -202,7 +208,7 @@ sub _data {
 	if($h) {
 		my $f = freeze($h);
 		my $cur_size = length($f);
-		$self->shm()->write($f, 4, $cur_size);
+		$self->shm()->write($f, $Config{intsize}, $cur_size);
 		$self->_data_size($cur_size);
 		return $h;
 	} else {
@@ -210,7 +216,7 @@ sub _data {
 		unless($cur_size) {
 			return {};
 		}
-		return thaw($self->shm()->read(4, $cur_size));
+		return thaw($self->shm()->read($Config{intsize}, $cur_size));
 	}
 }
 

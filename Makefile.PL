@@ -27,6 +27,7 @@ WriteMakefile(
 	'IPC::SysV' => 0,
 	'IPC::SharedMem' => 0,
 	'CHI' => 0.54,	# Needs latest CHI::Stats
+	'Config' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CHI-Driver-SharedMem-*' },

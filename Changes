@@ -1,5 +1,9 @@
 Revision history for CHI::Driver::SharedMem
 
+0.09	Sat Aug 18 17:57:40 BST 2012
+	Use $Config{intsize} do determine the size of an int
+	Croak if the shared memory area can't be created
+
 0.08	Wed Aug 15 08:31:38 BST 2012
 	Added test that the shared memory area is deleted on cleanup
 	Ensure using the latest version of CHI::Stats

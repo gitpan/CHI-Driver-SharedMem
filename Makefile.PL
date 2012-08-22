@@ -3,8 +3,12 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 if($^O eq 'MSWin32') {
-	# This will set the CPAN-Testers status to NA
+	# This will set the CPAN-Testers status to Unknown
+	# TODO: Work out how to set the status to NA
 	die 'Windows is not supported';
+} elsif($^O eq 'gnu') {
+	# I don't believe that the hurd supports shared memory
+	die 'GNU/Hurd is not supported';
 }
 
 WriteMakefile(
@@ -28,6 +32,7 @@ WriteMakefile(
 	'IPC::SharedMem' => 0,
 	'CHI' => 0.54,	# Needs latest CHI::Stats
 	'Config' => 0,
+	'IPC::Semaphore::Concurrency' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CHI-Driver-SharedMem-*' },

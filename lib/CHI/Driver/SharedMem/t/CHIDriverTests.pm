@@ -5,6 +5,7 @@ use warnings;
 use CHI::Test;
 use base qw(CHI::t::Driver);
 use Test::Warn;
+use IPC::SysV;
 
 =head1 NAME
 
@@ -12,11 +13,11 @@ CHI::Driver::SharedMem::t::CHIDriverTests
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -46,7 +47,7 @@ sub new_cache_options {
 	    $self->SUPER::new_cache_options(),
 	    driver => '+CHI::Driver::SharedMem',
 	    size => 16 * 1024,
-	    shmkey => 12344321,	# hope it's unique :-(
+	    shmkey => IPC::SysV::ftok($0),	# hope it's unique :-(
 	);
 }
 

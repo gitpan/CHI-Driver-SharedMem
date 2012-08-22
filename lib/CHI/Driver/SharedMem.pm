@@ -1,6 +1,5 @@
 package CHI::Driver::SharedMem;
 
-# TODO: Locking
 # There is an argument for mapping namespaces into keys and then putting
 # different namespaces into different shared memory areas.  I will think about
 # that.
@@ -10,6 +9,7 @@ use strict;
 use Moose;
 use IPC::SysV qw(S_IRUSR S_IWUSR IPC_CREAT);
 use IPC::SharedMem;
+use IPC::Semaphore::Concurrency;
 use Storable qw(freeze thaw);
 use Data::Dumper;
 use Digest::MD5;
@@ -19,8 +19,12 @@ use Config;
 extends 'CHI::Driver';
 
 has 'shmkey' => (is => 'ro', isa => 'Int');
-has 'shm' => (is => 'ro', builder => '_get_shm', lazy => 1);
+has 'shm' => (is => 'ro', builder => '_build_shm', lazy => 1);
 has 'size' => (is => 'ro', isa => 'Int', default => 8 * 1024);
+has 'lock' => (
+	is => 'ro',
+	builder => '_build_lock',
+);
 has '_data_size' => (
 	is => 'rw',
 	isa => 'Int',
@@ -42,11 +46,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -70,24 +74,20 @@ area. See L<IPC::SharedMem> for more information.
 
 The shared memory area is stored thus:
 
-=over 4
-
-Number of bytes in the cache [ int ]
-'cache' => {
-	'namespace1' => {
-		'key1' => 'value1',
-		'key2' -> 'value2',
-		...
+	# Number of bytes in the cache [ int ]
+	'cache' => {
+		'namespace1' => {
+			'key1' => 'value1',
+			'key2' => 'value2',
+			# ...
+		},
+		'namespace2' => {
+			'key1' => 'value3',
+			'key3' => 'value2',
+			# ...
+		}
+		# ...
 	}
-	'namespace2' => {
-		'key1' => 'value3',
-		'key3' => 'value2',
-		...
-	}
-	...
-}
-
-=back
 
 =head1 SUBROUTINES/METHODS
 
@@ -100,9 +100,11 @@ Stores an object in the cache
 sub store {
 	my($self, $key, $data) = @_;
 
+	$self->_lock();
 	my $h = $self->_data();
 	$h->{$self->namespace()}->{$key} = $data;
 	$self->_data($h);
+	$self->_unlock();
 }
 
 =head2 fetch
@@ -114,7 +116,10 @@ Retrieves an object from the cache
 sub fetch {
 	my($self, $key) = @_;
 
-	return $self->_data()->{$self->namespace()}->{$key};
+	$self->_lock();
+	my $rc = $self->_data()->{$self->namespace()}->{$key};
+	$self->_unlock();
+	return $rc;
 }
 
 =head2 remove
@@ -126,9 +131,11 @@ Remove an object from the cache
 sub remove {
 	my($self, $key) = @_;
 
+	$self->_lock();
 	my $h = $self->_data();
 	delete $h->{$self->namespace()}->{$key};
 	$self->_data($h);
+	$self->_unlock();
 }
 
 =head2 clear
@@ -140,9 +147,11 @@ Removes all data from the current namespace
 sub clear {
 	my $self = shift;
 
+	$self->_lock();
 	my $h = $self->_data();
 	delete $h->{$self->namespace()};
 	$self->_data($h);
+	$self->_unlock();
 }
 
 =head2 get_keys
@@ -154,7 +163,9 @@ Gets a list of the keys in the current namespace
 sub get_keys {
 	my $self = shift;
 
+	$self->_lock();
 	my $h = $self->_data();
+	$self->_unlock();
 	return(keys(%{$h->{$self->namespace()}}));
 }
 
@@ -167,10 +178,16 @@ Gets a list of the namespaces in the cache
 sub get_namespaces {
 	my $self = shift;
 
-	return(keys(%{$self->_data()}));
+	$self->_lock();
+	my $rc = $self->_data();
+	$self->_unlock();
+	return keys(%{$rc});
 }
 
-sub _get_shm {
+# Internal routines
+
+# The area must be locked by the caller
+sub _build_shm {
 	my $self = shift;
 
 	my $shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRUSR|S_IWUSR);
@@ -187,6 +204,23 @@ sub _get_shm {
 	return $shm;
 }
 
+sub _build_lock {
+	return IPC::Semaphore::Concurrency->new($0);
+}
+
+sub _lock {
+	my $self = shift;
+
+	$self->lock()->acquire(wait => 1);
+}
+
+sub _unlock {
+	my $self = shift;
+
+	$self->lock()->release();
+}
+
+# The area must be locked by the caller
 sub _data_size {
 	my $self = shift;
 	my $value = shift;
@@ -201,6 +235,7 @@ sub _data_size {
 	return unpack('I', $self->shm()->read(0, $Config{intsize}));
 }
 
+# The area must be locked by the caller
 sub _data {
 	my $self = shift;
 	my $h = shift;
@@ -211,13 +246,12 @@ sub _data {
 		$self->shm()->write($f, $Config{intsize}, $cur_size);
 		$self->_data_size($cur_size);
 		return $h;
-	} else {
-		my $cur_size = $self->_data_size();
-		unless($cur_size) {
-			return {};
-		}
-		return thaw($self->shm()->read($Config{intsize}, $cur_size));
 	}
+	my $cur_size = $self->_data_size();
+	unless($cur_size) {
+		return {};
+	}
+	return thaw($self->shm()->read($Config{intsize}, $cur_size));
 }
 
 =head2 BUILD
@@ -247,9 +281,13 @@ sub DEMOLISH {
 	if($self->shmkey()) {
 		my $cur_size;
 		if($self->get_namespaces()) {
+			$self->_lock();
 			$cur_size = $self->_data_size();
+			$self->_unlock();
 		} else {
+			$self->_lock();
 			$self->_data_size(0);
+			$self->_unlock();
 			$cur_size = 0;
 		}
 		$self->shm()->detach();
@@ -269,6 +307,12 @@ sub DEMOLISH {
 Nigel Horne, C<< <njh at bandsman.co.uk> >>
 
 =head1 BUGS
+
+The shared memory is locked using a binary switch because that's all that
+L<IPC::Semaphore::Concurrency> provides.
+It would be better to have a tri-state: free/read-locked()/write-locked().
+However the amount of time it's locked is so little that it's not worth the
+effort.
 
 Please report any bugs or feature requests to C<bug-chi-driver-sharedmem at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CHI-Driver-SharedMem>.  I will be notified, and then you'll

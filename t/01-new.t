@@ -1,4 +1,8 @@
-#!perl -T
+#!perl -w
+
+use strict;
+use warnings;
+use diagnostics;
 
 use Test::More tests => 7;
 use Test::Warn;

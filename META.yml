@@ -20,6 +20,7 @@ no_index:
 requires:
   CHI: 0.54
   Config: 0
+  IPC::Semaphore::Concurrency: 0
   IPC::SharedMem: 0
   IPC::SysV: 0
   Moose: 0
@@ -28,4 +29,4 @@ requires:
   Test::More: 0.82
   Test::NoWarnings: 0
   Test::Warn: 0
-version: 0.09
+version: 0.10

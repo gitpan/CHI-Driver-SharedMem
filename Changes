@@ -1,5 +1,9 @@
 Revision history for CHI::Driver::SharedMem
 
+0.11	Fri Aug 31 08:31:20 BST 2012
+	Use flock instead of IPC::Semaphore::Concurrency
+	if($value) corrected to if(defined($value))
+
 0.10	Wed Aug 22 13:53:49 BST 2012
 	Use ftok to generate the shmkey in the test
 	Don't try to build on GNU/Hurd

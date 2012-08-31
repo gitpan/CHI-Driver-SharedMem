@@ -34,7 +34,7 @@
          "requires" : {
             "CHI" : "0.54",
             "Config" : "0",
-            "IPC::Semaphore::Concurrency" : "0",
+            "Fcntl" : "0",
             "IPC::SharedMem" : "0",
             "IPC::SysV" : "0",
             "Moose" : "0",
@@ -47,5 +47,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.10"
+   "version" : "0.11"
 }

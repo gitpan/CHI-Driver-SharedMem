@@ -7,17 +7,20 @@ use base qw(CHI::t::Driver);
 use Test::Warn;
 use IPC::SysV;
 
+use CHI::Test::Util
+  qw(activate_test_logger cmp_bool is_between random_string skip_until);
+
 =head1 NAME
 
 CHI::Driver::SharedMem::t::CHIDriverTests
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 SYNOPSIS
 

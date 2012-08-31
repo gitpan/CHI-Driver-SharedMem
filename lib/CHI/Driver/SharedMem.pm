@@ -9,12 +9,12 @@ use strict;
 use Moose;
 use IPC::SysV qw(S_IRUSR S_IWUSR IPC_CREAT);
 use IPC::SharedMem;
-use IPC::Semaphore::Concurrency;
 use Storable qw(freeze thaw);
 use Data::Dumper;
 use Digest::MD5;
 use Carp;
 use Config;
+use Fcntl;
 
 extends 'CHI::Driver';
 
@@ -46,11 +46,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -98,11 +98,11 @@ Stores an object in the cache
 =cut
 
 sub store {
-	my($self, $key, $data) = @_;
+	my($self, $key, $value) = @_;
 
 	$self->_lock();
 	my $h = $self->_data();
-	$h->{$self->namespace()}->{$key} = $data;
+	$h->{$self->namespace()}->{$key} = $value;
 	$self->_data($h);
 	$self->_unlock();
 }
@@ -205,27 +205,25 @@ sub _build_shm {
 }
 
 sub _build_lock {
-	return IPC::Semaphore::Concurrency->new($0);
+	open(my $fd, '<', $0);
+	return $fd;
 }
 
 sub _lock {
 	my $self = shift;
-
-	$self->lock()->acquire(wait => 1);
+	flock($self->lock(), Fcntl::LOCK_EX);
 }
 
 sub _unlock {
 	my $self = shift;
-
-	$self->lock()->release();
+	flock($self->lock(), Fcntl::LOCK_UN);
 }
 
 # The area must be locked by the caller
 sub _data_size {
-	my $self = shift;
-	my $value = shift;
+	my($self, $value) = @_;
 
-	if($value) {
+	if(defined($value)) {
 		$self->shm()->write(pack('I', $value), 0, $Config{intsize});
 		return $value;
 	}
@@ -237,10 +235,9 @@ sub _data_size {
 
 # The area must be locked by the caller
 sub _data {
-	my $self = shift;
-	my $h = shift;
+	my($self, $h) = @_;
 
-	if($h) {
+	if(defined($h)) {
 		my $f = freeze($h);
 		my $cur_size = length($f);
 		$self->shm()->write($f, $Config{intsize}, $cur_size);
@@ -280,7 +277,7 @@ sub DEMOLISH {
 
 	if($self->shmkey()) {
 		my $cur_size;
-		if($self->get_namespaces()) {
+		if(scalar($self->get_namespaces())) {
 			$self->_lock();
 			$cur_size = $self->_data_size();
 			$self->_unlock();
@@ -307,12 +304,6 @@ sub DEMOLISH {
 Nigel Horne, C<< <njh at bandsman.co.uk> >>
 
 =head1 BUGS
-
-The shared memory is locked using a binary switch because that's all that
-L<IPC::Semaphore::Concurrency> provides.
-It would be better to have a tri-state: free/read-locked()/write-locked().
-However the amount of time it's locked is so little that it's not worth the
-effort.
 
 Please report any bugs or feature requests to C<bug-chi-driver-sharedmem at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=CHI-Driver-SharedMem>.  I will be notified, and then you'll

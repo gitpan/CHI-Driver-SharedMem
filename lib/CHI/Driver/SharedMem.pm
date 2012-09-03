@@ -46,11 +46,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -100,7 +100,7 @@ Stores an object in the cache
 sub store {
 	my($self, $key, $value) = @_;
 
-	$self->_lock();
+	$self->_lock(type => 'write');
 	my $h = $self->_data();
 	$h->{$self->namespace()}->{$key} = $value;
 	$self->_data($h);
@@ -116,7 +116,7 @@ Retrieves an object from the cache
 sub fetch {
 	my($self, $key) = @_;
 
-	$self->_lock();
+	$self->_lock(type => 'read');
 	my $rc = $self->_data()->{$self->namespace()}->{$key};
 	$self->_unlock();
 	return $rc;
@@ -131,7 +131,7 @@ Remove an object from the cache
 sub remove {
 	my($self, $key) = @_;
 
-	$self->_lock();
+	$self->_lock(type => 'write');
 	my $h = $self->_data();
 	delete $h->{$self->namespace()}->{$key};
 	$self->_data($h);
@@ -147,7 +147,7 @@ Removes all data from the current namespace
 sub clear {
 	my $self = shift;
 
-	$self->_lock();
+	$self->_lock(type => 'write');
 	my $h = $self->_data();
 	delete $h->{$self->namespace()};
 	$self->_data($h);
@@ -163,7 +163,7 @@ Gets a list of the keys in the current namespace
 sub get_keys {
 	my $self = shift;
 
-	$self->_lock();
+	$self->_lock(type => 'read');
 	my $h = $self->_data();
 	$self->_unlock();
 	return(keys(%{$h->{$self->namespace()}}));
@@ -178,7 +178,7 @@ Gets a list of the namespaces in the cache
 sub get_namespaces {
 	my $self = shift;
 
-	$self->_lock();
+	$self->_lock(type => 'read');
 	my $rc = $self->_data();
 	$self->_unlock();
 	return keys(%{$rc});
@@ -210,12 +210,14 @@ sub _build_lock {
 }
 
 sub _lock {
-	my $self = shift;
-	flock($self->lock(), Fcntl::LOCK_EX);
+	my ($self, %params) = @_;
+
+	flock($self->lock(), ($params{type} eq 'read') ? Fcntl::LOCK_SH : Fcntl::LOCK_EX);
 }
 
 sub _unlock {
 	my $self = shift;
+
 	flock($self->lock(), Fcntl::LOCK_UN);
 }
 
@@ -278,11 +280,11 @@ sub DEMOLISH {
 	if($self->shmkey()) {
 		my $cur_size;
 		if(scalar($self->get_namespaces())) {
-			$self->_lock();
+			$self->_lock(type => 'read');
 			$cur_size = $self->_data_size();
 			$self->_unlock();
 		} else {
-			$self->_lock();
+			$self->_lock(type => 'write');
 			$self->_data_size(0);
 			$self->_unlock();
 			$cur_size = 0;

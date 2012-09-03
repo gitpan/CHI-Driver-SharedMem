@@ -1,5 +1,9 @@
 Revision history for CHI::Driver::SharedMem
 
+0.12	Mon Sep  3 08:22:39 BST 2012
+	t/01-new.t: Handle 'Bad System Call' within Cygwin
+	Use read locks where possible
+
 0.11	Fri Aug 31 08:31:20 BST 2012
 	Use flock instead of IPC::Semaphore::Concurrency
 	if($value) corrected to if(defined($value))

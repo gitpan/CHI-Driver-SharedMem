@@ -46,11 +46,11 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.12
+Version 0.13
 
 =cut
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
@@ -294,7 +294,7 @@ sub DEMOLISH {
 		# If it has, then the cache could be removed if nattch = 0.
 		unless($cur_size) {
 			my $stat = $self->shm()->stat();
-			if($stat->nattch() == 0) {
+			if(defined($stat) && ($stat->nattch() == 0)) {
 				$self->shm()->remove();
 			}
 		}

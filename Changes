@@ -1,5 +1,10 @@
 Revision history for CHI::Driver::SharedMem
 
+0.13	Mon Sep 17 09:20:58 BST 2012
+	Handle race condition which could result in an error when two processes
+		try to remove the same empty shared memory area when they
+		terminate
+
 0.12	Mon Sep  3 08:22:39 BST 2012
 	t/01-new.t: Handle 'Bad System Call' within Cygwin
 	Use read locks where possible

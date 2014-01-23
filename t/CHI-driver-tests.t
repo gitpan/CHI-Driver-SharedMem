@@ -11,6 +11,7 @@ my $SIGSYS_count = 0;
 eval {
 	local $SIG{SYS} = sub { $SIGSYS_count++ };
 	my $shm = IPC::SharedMem->new(1, 8 * 1024, S_IRUSR|S_IWUSR);
+	$shm->remove();
 };
 if($@ || $SIGSYS_count) {
 	if($^O eq 'cygwin') {

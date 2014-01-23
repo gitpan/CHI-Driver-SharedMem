@@ -16,11 +16,11 @@ CHI::Driver::SharedMem::t::CHIDriverTests
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =cut
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 =head1 SYNOPSIS
 
@@ -50,7 +50,7 @@ sub new_cache_options {
 	    $self->SUPER::new_cache_options(),
 	    driver => '+CHI::Driver::SharedMem',
 	    size => 16 * 1024,
-	    shmkey => IPC::SysV::ftok($0),	# hope it's unique :-(
+	    shmkey => 12344321,
 	);
 }
 

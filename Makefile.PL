@@ -22,7 +22,7 @@ WriteMakefile(
       : ()),
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0.82,	# Needs new_ok
+        'Test::Most' => 0,
 	'Test::NoWarnings' => 0,
 	'Test::Warn' => 0,
 	'Test::Class' => 0,
@@ -31,6 +31,8 @@ WriteMakefile(
 	'IPC::SysV' => 0,
 	'IPC::SharedMem' => 0,
 	'CHI' => 0.54,	# Needs latest CHI::Stats
+	'CHI::Test' => 0,
+	'CHI::Test::Util' => 0,
 	'Config' => 0,
 	'Fcntl' => 0,
     },

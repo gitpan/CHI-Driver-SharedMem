@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use diagnostics;
 
-use Test::More;
+use Test::Most;
 use Test::Warn;
 use CHI;
 use IPC::SysV qw(S_IRUSR S_IWUSR);

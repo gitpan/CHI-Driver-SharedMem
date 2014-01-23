@@ -9,9 +9,10 @@ unless($ENV{RELEASE_TESTING}) {
     plan( skip_all => "Author tests not required for installation" );
 }
 
-eval 'use Test::NoPlan qw / all_plans_ok /';
+eval 'use Test::Strict';
 if($@) {
-	plan skip_all => 'Test::NoPlan required for test verification';
+	plan skip_all => 'Test::Strict required for testing use strict';
 } else {
-	all_plans_ok();
+	all_perl_files_ok();
+	warnings_ok('lib/CHI/Driver/SharedMem.pm');
 }

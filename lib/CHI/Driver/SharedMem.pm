@@ -46,29 +46,32 @@ CHI::Driver::SharedMem - Cache data in shared memory
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =cut
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 # FIXME - get the pod documentation right so that the layout of the memory
 # area looks correct in the man page
 
 =head1 SYNOPSIS
 
-L<CHI> driver which stores data in shared memory objects for persistently over
-processes.
-Size is an optional parameter containing the size of the shared memory area, in
-bytes.
+L<CHI> driver which stores data in shared memory objects for persistently
+over processes.
+Size is an optional parameter containing the size of the shared memory area,
+in bytes.
 Shmkey is a mandatory parameter containing the IPC key for the shared memory
-area. See L<IPC::SharedMem> for more information.
+area.
+See L<IPC::SharedMem> for more information.
 
     use CHI;
     my $cache = CHI->new(
 	driver => 'SharedMem',
 	size => 8 * 1024,
-	shmkey => 12344321,	# Choose something unique
+	shmkey => 12344321,	# Choose something unique, but the same across
+				# all caches so that namespaces will be shared,
+				# but we won't step on any other shm areas
     );
     # ...
 
@@ -181,7 +184,9 @@ sub get_namespaces {
 	$self->_lock(type => 'read');
 	my $rc = $self->_data();
 	$self->_unlock();
-	return keys(%{$rc});
+	# Needs to be sorted for RT89892
+	my @rc = sort keys(%{$rc});
+	return @rc;
 }
 
 # Internal routines
@@ -195,7 +200,7 @@ sub _build_shm {
 		$shm = IPC::SharedMem->new($self->shmkey(), $self->size(), S_IRUSR|S_IWUSR|IPC_CREAT);
 		unless($shm) {
 			croak 'Couldn\'t create a shared memory area with key ' .
-				$self->shmkey();
+				$self->shmkey() . ": $!";
 			return;
 		}
 		$shm->write(pack('I', 0), 0, $Config{intsize});
@@ -232,7 +237,11 @@ sub _data_size {
 	unless($self->shm()) {
 		return 0;
 	}
-	return unpack('I', $self->shm()->read(0, $Config{intsize}));
+	my $size = $self->shm()->read(0, $Config{intsize});
+	unless(defined($size)) {
+		return 0;
+	}
+	return unpack('I', $size);
 }
 
 # The area must be locked by the caller
@@ -352,10 +361,9 @@ L<http://search.cpan.org/dist/CHI-Driver-SharedMem>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2012 Nigel Horne.
+Copyright 2012-2014 Nigel Horne.
 
 This program is released under the following licence: GPL
-
 
 =cut
 

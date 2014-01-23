@@ -1,5 +1,11 @@
 Revision history for CHI::Driver::SharedMem
 
+0.14	Thu 23 Jan 10:34:54 EST 2014
+	Fix a rare condition where the data fails to read
+	Added work around for RT89892
+	Use Test::Most instead of Test::More
+	Added t/strict.t
+
 0.13	Mon Sep 17 09:20:58 BST 2012
 	Handle race condition which could result in an error when two processes
 		try to remove the same empty shared memory area when they
